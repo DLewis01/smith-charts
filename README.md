@@ -7,8 +7,13 @@ Just as a road map lets you find your way between towns, a Smith Chart lets you 
 
 At radio frequencies, circuits behave differently from the simple resistor circuits taught in basic electronics. Wires become transmission lines, signals reflect from mismatched loads, and voltages and currents vary along a cable.
 The Smith Chart brings all of these effects together into a single picture. It allows you to:
--Visualise complex impedance.
--Match antennas to transmitters.
--Design RF filters and matching networks.
--Understand standing waves and reflections.
+
+- Visualise complex impedance.
+
+- Match antennas to transmitters.
+
+- Design RF filters and matching networks.
+
+- Understand standing waves and reflections.
+
 -Calculate transmission line behaviour without complicated mathematics.
