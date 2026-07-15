@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Smith Chart with Proper Labels</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+        .chart-container {
+            max-width: 800px;
+        }
+        .resistance-circle {
+            stroke: #cc0000;
+            stroke-width: 0.7;
+            fill: none;
+        }
+        .reactance-arc {
+            stroke: #0066cc;
+            stroke-width: 0.7;
+            fill: none;
+        }
+        .resistance-label {
+            fill: #cc0000;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .reactance-label {
+            fill: #0066cc;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .angle-line {
+            stroke: #888;
+            stroke-width: 0.3;
+            stroke-dasharray: 2,2;
+        }
+        .wavelength-scale {
+            stroke: #333;
+            stroke-width: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <svg id="smithChart" width="800" height="800" viewBox="0 0 800 800"></svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const svg = document.getElementById('smithChart');
+            const centerX = 400;
+            const centerY = 400;
+            const radius = 350;
+            const rightEdgeX = centerX + radius;
+            
+            // Draw outer circle (|Γ|=1 circle)
+            const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            outerCircle.setAttribute("cx", centerX);
+            outerCircle.setAttribute("cy", centerY);
+            outerCircle.setAttribute("r", radius);
+            outerCircle.setAttribute("stroke", "#333");
+            outerCircle.setAttribute("stroke-width", "1.5");
+            outerCircle.setAttribute("fill", "none");
+            svg.appendChild(outerCircle);
+            
+            // Draw horizontal line (real axis)
+            const realAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            realAxis.setAttribute("x1", centerX - radius);
+            realAxis.setAttribute("y1", centerY);
+            realAxis.setAttribute("x2", centerX + radius);
+            realAxis.setAttribute("y2", centerY);
+            realAxis.setAttribute("stroke", "#333");
+            realAxis.setAttribute("stroke-width", "1.5");
+            svg.appendChild(realAxis);
+
+            // =============================================
+            // DETAILED REACTANCE ARCS (Blue)
+            // =============================================
+            const reactances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                               1, 1.2, 1.5, 1.8, 2, 2.5, 3, 4, 5, 10];
+            
+            // Positive reactance (upper half)
+            reactances.forEach(x => {
+                const arcRadius = radius / x;
+                const arcCenterX = centerX + radius;
+                const arcCenterY = centerY - arcRadius;
+                
+                // Calculate intersection with outer circle
+                const dx = arcCenterX - centerX;
+                const dy = arcCenterY - centerY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance <= radius + arcRadius && distance >= Math.abs(radius - arcRadius)) {
+                    const a = (radius*radius - arcRadius*arcRadius + distance*distance) / (2 * distance);
+                    const h = Math.sqrt(radius*radius - a*a);
+                    
+                    const px = centerX + a * dx / distance;
+                    const py = centerY + a * dy / distance;
+                    
+                    const intersectionX = px + h * dy / distance;
+                    const intersectionY = py - h * dx / distance;
+                    
+                    // Draw the arc
+                    const arc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    arc.setAttribute("d", `M ${rightEdgeX} ${centerY} A ${arcRadius} ${arcRadius} 0 0 1 ${intersectionX} ${intersectionY}`);
+                    arc.setAttribute("class", "reactance-arc");
+                    svg.appendChild(arc);
+                    
+                    // Label positioning (right side)
+                    const midAngle = Math.atan2(
+                        (centerY + intersectionY)/2 - arcCenterY,
+                        (rightEdgeX + intersectionX)/2 - arcCenterX
+                    );
+                    const labelX = arcCenterX + arcRadius * Math.cos(midAngle) * 0.7 + 5;
+                    const labelY = arcCenterY + arcRadius * Math.sin(midAngle) * 0.7;
+                    
+                    // Only label major arcs to avoid clutter
+                    if (x % 0.5 === 0 || x === 1 || x === 2 || x === 5 || x === 10) {
+                        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        label.setAttribute("x", labelX);
+                        label.setAttribute("y", labelY + 4);
+                        label.setAttribute("class", "reactance-label");
+                        label.textContent = x.toString();
+                        svg.appendChild(label);
+                    }
+                }
+            });
+            
+            // Negative reactance (lower half)
+            reactances.forEach(x => {
+                const arcRadius = radius / x;
+                const arcCenterX = centerX + radius;
+                const arcCenterY = centerY + arcRadius;
+                
+                // Calculate intersection with outer circle
+                const dx = arcCenterX - centerX;
+                const dy = arcCenterY - centerY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance <= radius + arcRadius && distance >= Math.abs(radius - arcRadius)) {
+                    const a = (radius*radius - arcRadius*arcRadius + distance*distance) / (2 * distance);
+                    const h = Math.sqrt(radius*radius - a*a);
+                    
+                    const px = centerX + a * dx / distance;
+                    const py = centerY + a * dy / distance;
+                    
+                    const intersectionX = px - h * dy / distance;
+                    const intersectionY = py + h * dx / distance;
+                    
+                    // Draw the arc
+                    const arc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    arc.setAttribute("d", `M ${rightEdgeX} ${centerY} A ${arcRadius} ${arcRadius} 0 0 0 ${intersectionX} ${intersectionY}`);
+                    arc.setAttribute("class", "reactance-arc");
+                    svg.appendChild(arc);
+                    
+                    // Label positioning (right side)
+                    const midAngle = Math.atan2(
+                        (centerY + intersectionY)/2 - arcCenterY,
+                        (rightEdgeX + intersectionX)/2 - arcCenterX
+                    );
+                    const labelX = arcCenterX + arcRadius * Math.cos(midAngle) * 0.7 + 5;
+                    const labelY = arcCenterY + arcRadius * Math.sin(midAngle) * 0.7;
+                    
+                    // Only label major arcs to avoid clutter
+                    if (x % 0.5 === 0 || x === 1 || x === 2 || x === 5 || x === 10) {
+                        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        label.setAttribute("x", labelX);
+                        label.setAttribute("y", labelY + 4);
+                        label.setAttribute("class", "reactance-label");
+                        label.textContent = "-" + x.toString();
+                        svg.appendChild(label);
+                    }
+                }
+            });
+
+            // =============================================
+            // DETAILED RESISTANCE CIRCLES (Red)
+            // With labels on LEFT side
+            // =============================================
+            const resistances = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                               1, 1.2, 1.5, 1.8, 2, 2.5, 3, 4, 5, 10];
+            resistances.forEach(r => {
+                if (r === 0) {
+                    // Special case for r=0 (left edge)
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", centerX - radius);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", radius);
+                    circle.setAttribute("class", "resistance-circle");
+                    svg.appendChild(circle);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", centerX - radius - 10);
+                    label.setAttribute("y", centerY + 4);
+                    label.setAttribute("class", "resistance-label");
+                    label.setAttribute("text-anchor", "end");
+                    label.textContent = "0";
+                    svg.appendChild(label);
+                } else {
+                    const circleRadius = radius / (1 + r);
+                    const circleX = centerX + (radius * r) / (1 + r);
+                    
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", circleX);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", circleRadius);
+                    circle.setAttribute("class", "resistance-circle");
+                    svg.appendChild(circle);
+                    
+                    // Label positioning (LEFT side)
+                    const labelAngle = Math.asin(circleRadius / (circleX - centerX));
+                    const labelX = circleX - circleRadius * Math.cos(labelAngle) - 8;
+                    const labelY = centerY - circleRadius * Math.sin(labelAngle) + 4;
+                    
+                    // Only label major circles to avoid clutter
+                    if (r % 0.5 === 0 || r === 1 || r === 2 || r === 5 || r === 10) {
+                        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        label.setAttribute("x", labelX);
+                        label.setAttribute("y", labelY);
+                        label.setAttribute("class", "resistance-label");
+                        label.setAttribute("text-anchor", "end");
+                        label.textContent = r.toString();
+                        svg.appendChild(label);
+                    }
+                }
+            });
+
+            // =============================================
+            // ANGLE LINES (Radial)
+            // =============================================
+            for (let angleDeg = 10; angleDeg <= 170; angleDeg += 10) {
+                if (angleDeg === 90) continue; // Skip the vertical line
+                
+                const angleRad = angleDeg * Math.PI / 180;
+                const endX = centerX + radius * Math.cos(angleRad);
+                const endY = centerY - radius * Math.sin(angleRad);
+                
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", rightEdgeX);
+                line.setAttribute("y1", centerY);
+                line.setAttribute("x2", endX);
+                line.setAttribute("y2", endY);
+                line.setAttribute("class", "angle-line");
+                svg.appendChild(line);
+                
+                // Angle labels
+                const labelX = rightEdgeX + 15;
+                const labelY = centerY - (rightEdgeX + 15 - centerX) * Math.tan(angleRad);
+                
+                const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                label.setAttribute("x", labelX);
+                label.setAttribute("y", labelY + 4);
+                label.setAttribute("font-size", "10");
+                label.setAttribute("fill", "#555");
+                label.textContent = angleDeg + "°";
+                svg.appendChild(label);
+            }
+
+            // =============================================
+            // WAVELENGTH SCALE
+            // =============================================
+            const outerScaleRadius = radius + 20;
+            const wavelengthScale = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            wavelengthScale.setAttribute("cx", centerX);
+            wavelengthScale.setAttribute("cy", centerY);
+            wavelengthScale.setAttribute("r", outerScaleRadius);
+            wavelengthScale.setAttribute("class", "wavelength-scale");
+            wavelengthScale.setAttribute("fill", "none");
+            svg.appendChild(wavelengthScale);
+            
+            // Wavelength ticks and labels
+            for (let angleDeg = 0; angleDeg < 360; angleDeg += 5) {
+                const angleRad = angleDeg * Math.PI / 180;
+                const startX = centerX + outerScaleRadius * Math.cos(angleRad);
+                const startY = centerY - outerScaleRadius * Math.sin(angleRad);
+                const endX = centerX + (outerScaleRadius + (angleDeg % 10 === 0 ? 7 : 3)) * Math.cos(angleRad);
+                const endY = centerY - (outerScaleRadius + (angleDeg % 10 === 0 ? 7 : 3)) * Math.sin(angleRad);
+                
+                const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                tick.setAttribute("x1", startX);
+                tick.setAttribute("y1", startY);
+                tick.setAttribute("x2", endX);
+                tick.setAttribute("y2", endY);
+                tick.setAttribute("class", "wavelength-scale");
+                svg.appendChild(tick);
+                
+                // Label every 0.05 wavelength (18 degrees)
+                if (angleDeg % 18 === 0) {
+                    const wavelength = (angleDeg / 720).toFixed(2);
+                    const labelX = centerX + (outerScaleRadius + 12) * Math.cos(angleRad);
+                    const labelY = centerY - (outerScaleRadius + 12) * Math.sin(angleRad);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", labelX);
+                    label.setAttribute("y", labelY + 4);
+                    label.setAttribute("font-size", "10");
+                    label.setAttribute("fill", "#333");
+                    label.setAttribute("text-anchor", "middle");
+                    label.textContent = wavelength + "λ";
+                    svg.appendChild(label);
+                }
+            }
+
+            // =============================================
+            // REFERENCE POINTS
+            // =============================================
+            // Center point (matched)
+            const centerMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            centerMarker.setAttribute("cx", centerX);
+            centerMarker.setAttribute("cy", centerY);
+            centerMarker.setAttribute("r", 4);
+            centerMarker.setAttribute("fill", "black");
+            svg.appendChild(centerMarker);
+            
+            // Open circuit (right edge)
+            const openMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            openMarker.setAttribute("cx", rightEdgeX);
+            openMarker.setAttribute("cy", centerY);
+            openMarker.setAttribute("r", 4);
+            openMarker.setAttribute("fill", "black");
+            svg.appendChild(openMarker);
+            
+            const openLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            openLabel.setAttribute("x", rightEdgeX + 15);
+            openLabel.setAttribute("y", centerY + 5);
+            openLabel.setAttribute("font-size", "12");
+            openLabel.textContent = "Open (∞)";
+            svg.appendChild(openLabel);
+            
+            // Short circuit (left edge)
+            const shortMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            shortMarker.setAttribute("cx", centerX - radius);
+            shortMarker.setAttribute("cy", centerY);
+            shortMarker.setAttribute("r", 4);
+            shortMarker.setAttribute("fill", "black");
+            svg.appendChild(shortMarker);
+            
+            const shortLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            shortLabel.setAttribute("x", centerX - radius - 15);
+            shortLabel.setAttribute("y", centerY + 5);
+            shortLabel.setAttribute("font-size", "12");
+            shortLabel.setAttribute("text-anchor", "end");
+            shortLabel.textContent = "Short (0)";
+            svg.appendChild(shortLabel);
+
+            // Chart title
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            title.setAttribute("x", centerX);
+            title.setAttribute("y", 30);
+            title.setAttribute("font-size", "18");
+            title.setAttribute("text-anchor", "middle");
+            title.setAttribute("font-weight", "bold");
+            title.textContent = "Detailed Smith Chart";
+            svg.appendChild(title);
+            
+            // Legend
+            const legend = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            legend.setAttribute("x", centerX);
+            legend.setAttribute("y", 55);
+            legend.setAttribute("font-size", "12");
+            legend.setAttribute("text-anchor", "middle");
+            legend.innerHTML = "<tspan fill='#cc0000'>Resistance Circles</tspan> | <tspan fill='#0066cc'>Reactance Arcs</tspan>";
+            svg.appendChild(legend);
+        });
+    </script>
+</body>
+</html>
+

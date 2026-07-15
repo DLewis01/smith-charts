@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Smith Chart</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+        .chart-container {
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <svg id="smithChart" width="800" height="800" viewBox="0 0 800 800"></svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const svg = document.getElementById('smithChart');
+            const centerX = 400;
+            const centerY = 400;
+            const radius = 350;
+            const rightEdgeX = centerX + radius;
+            
+            // Draw outer circle (|Γ|=1 circle)
+            const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            outerCircle.setAttribute("cx", centerX);
+            outerCircle.setAttribute("cy", centerY);
+            outerCircle.setAttribute("r", radius);
+            outerCircle.setAttribute("fill", "none");
+            outerCircle.setAttribute("stroke", "black");
+            outerCircle.setAttribute("stroke-width", "1.5");
+            svg.appendChild(outerCircle);
+            
+            // Draw horizontal line (real axis)
+            const realAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            realAxis.setAttribute("x1", centerX - radius);
+            realAxis.setAttribute("y1", centerY);
+            realAxis.setAttribute("x2", centerX + radius);
+            realAxis.setAttribute("y2", centerY);
+            realAxis.setAttribute("stroke", "black");
+            realAxis.setAttribute("stroke-width", "1.5");
+            svg.appendChild(realAxis);
+            
+            // Draw constant resistance circles
+            const resistances = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                               1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10];
+            resistances.forEach(r => {
+                if (r === 0) {
+                    // Special case for r=0 (left edge)
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", centerX - radius);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", radius);
+                    circle.setAttribute("fill", "none");
+                    circle.setAttribute("stroke", "black");
+                    circle.setAttribute("stroke-width", "1");
+                    svg.appendChild(circle);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", centerX - radius + 10);
+                    label.setAttribute("y", centerY + 15);
+                    label.setAttribute("font-size", "12");
+                    label.textContent = "0";
+                    svg.appendChild(label);
+                } else {
+                    const circleRadius = radius / (1 + r);
+                    const circleX = centerX + (radius * r) / (1 + r);
+                    
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", circleX);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", circleRadius);
+                    circle.setAttribute("fill", "none");
+                    circle.setAttribute("stroke", "black");
+                    circle.setAttribute("stroke-width", "1");
+                    svg.appendChild(circle);
+                    
+                    // Label every 0.5 resistance
+                    if (r % 0.5 === 0 || r === 1 || r === 2 || r === 5 || r === 10) {
+                        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        label.setAttribute("x", circleX + circleRadius + 8);
+                        label.setAttribute("y", centerY + 5);
+                        label.setAttribute("font-size", "12");
+                        label.textContent = r.toString();
+                        svg.appendChild(label);
+                    }
+                }
+            });
+            
+            // Draw constant reactance arcs (all originating from right side)
+            const reactances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                               1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10];
+            reactances.forEach(x => {
+                // Positive reactance (upper half)
+                const arcRadiusPos = radius / x;
+                const arcCenterYPos = centerY - arcRadiusPos;
+                
+                const arcPos = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                arcPos.setAttribute("d", `M ${rightEdgeX} ${centerY} A ${arcRadiusPos} ${arcRadiusPos} 0 0 0 ${centerX} ${centerY}`);
+                arcPos.setAttribute("fill", "none");
+                arcPos.setAttribute("stroke", "black");
+                arcPos.setAttribute("stroke-width", "1");
+                svg.appendChild(arcPos);
+                
+                // Negative reactance (lower half)
+                const arcNeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                arcNeg.setAttribute("d", `M ${rightEdgeX} ${centerY} A ${arcRadiusPos} ${arcRadiusPos} 0 0 1 ${centerX} ${centerY}`);
+                arcNeg.setAttribute("fill", "none");
+                arcNeg.setAttribute("stroke", "black");
+                arcNeg.setAttribute("stroke-width", "1");
+                svg.appendChild(arcNeg);
+                
+                // Add label for positive reactance (every 0.5)
+                if (x % 0.5 === 0 || x === 1 || x === 2 || x === 5 || x === 10) {
+                    // Calculate point at 45 degrees on the arc
+                    const angle = Math.PI/4;
+                    const labelX = rightEdgeX - arcRadiusPos * (1 - Math.cos(angle));
+                    const labelY = centerY - arcRadiusPos * Math.sin(angle);
+                    
+                    const labelPos = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    labelPos.setAttribute("x", labelX - 15);
+                    labelPos.setAttribute("y", labelY + 5);
+                    labelPos.setAttribute("font-size", "12");
+                    labelPos.textContent = x.toString();
+                    svg.appendChild(labelPos);
+                    
+                    // Add label for negative reactance
+                    const labelNeg = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    labelNeg.setAttribute("x", labelX - 15);
+                    labelNeg.setAttribute("y", centerY + (centerY - labelY) + 5);
+                    labelNeg.setAttribute("font-size", "12");
+                    labelNeg.textContent = "-" + x.toString();
+                    svg.appendChild(labelNeg);
+                }
+            });
+            
+            // Draw radial lines for angle markers (all originating from right side)
+            for (let angleDeg = 5; angleDeg <= 175; angleDeg += 5) {
+                const angleRad = angleDeg * Math.PI / 180;
+                const endX = centerX + radius * Math.cos(angleRad);
+                const endY = centerY - radius * Math.sin(angleRad);
+                
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", rightEdgeX);
+                line.setAttribute("y1", centerY);
+                line.setAttribute("x2", endX);
+                line.setAttribute("y2", endY);
+                line.setAttribute("stroke", "black");
+                line.setAttribute("stroke-width", "0.5");
+                line.setAttribute("stroke-dasharray", "2,2");
+                svg.appendChild(line);
+                
+                // Label every 10 degrees
+                if (angleDeg % 10 === 0) {
+                    const labelX = rightEdgeX + 15;
+                    const labelY = centerY - (rightEdgeX + 15 - centerX) * Math.tan(angleRad);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", labelX);
+                    label.setAttribute("y", labelY + 5);
+                    label.setAttribute("font-size", "10");
+                    label.textContent = angleDeg + "°";
+                    svg.appendChild(label);
+                }
+            }
+            
+            // Add center marker
+            const centerMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            centerMarker.setAttribute("cx", centerX);
+            centerMarker.setAttribute("cy", centerY);
+            centerMarker.setAttribute("r", 3);
+            centerMarker.setAttribute("fill", "black");
+            svg.appendChild(centerMarker);
+            
+            // Add open circuit marker (right edge)
+            const openMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            openMarker.setAttribute("cx", rightEdgeX);
+            openMarker.setAttribute("cy", centerY);
+            openMarker.setAttribute("r", 3);
+            openMarker.setAttribute("fill", "black");
+            svg.appendChild(openMarker);
+            
+            const openLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            openLabel.setAttribute("x", rightEdgeX + 15);
+            openLabel.setAttribute("y", centerY + 5);
+            openLabel.setAttribute("font-size", "14");
+            openLabel.textContent = "∞";
+            svg.appendChild(openLabel);
+            
+            // Add short circuit marker (left edge)
+            const shortMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            shortMarker.setAttribute("cx", centerX - radius);
+            shortMarker.setAttribute("cy", centerY);
+            shortMarker.setAttribute("r", 3);
+            shortMarker.setAttribute("fill", "black");
+            svg.appendChild(shortMarker);
+            
+            // Add wavelength scales (outer scale)
+            const outerScaleRadius = radius + 30;
+            const wavelengthScale = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            wavelengthScale.setAttribute("cx", centerX);
+            wavelengthScale.setAttribute("cy", centerY);
+            wavelengthScale.setAttribute("r", outerScaleRadius);
+            wavelengthScale.setAttribute("fill", "none");
+            wavelengthScale.setAttribute("stroke", "black");
+            wavelengthScale.setAttribute("stroke-width", "1");
+            svg.appendChild(wavelengthScale);
+            
+            // Add wavelength ticks and labels
+            for (let angleDeg = 0; angleDeg < 360; angleDeg += 5) {
+                const angleRad = angleDeg * Math.PI / 180;
+                const startX = centerX + outerScaleRadius * Math.cos(angleRad);
+                const startY = centerY - outerScaleRadius * Math.sin(angleRad);
+                const endX = centerX + (outerScaleRadius + (angleDeg % 10 === 0 ? 10 : 5)) * Math.cos(angleRad);
+                const endY = centerY - (outerScaleRadius + (angleDeg % 10 === 0 ? 10 : 5)) * Math.sin(angleRad);
+                
+                const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                tick.setAttribute("x1", startX);
+                tick.setAttribute("y1", startY);
+                tick.setAttribute("x2", endX);
+                tick.setAttribute("y2", endY);
+                tick.setAttribute("stroke", "black");
+                tick.setAttribute("stroke-width", "1");
+                svg.appendChild(tick);
+                
+                // Label every 0.05 wavelength (18 degrees)
+                if (angleDeg % 18 === 0) {
+                    const wavelength = (angleDeg / 720).toFixed(2);
+                    const labelX = centerX + (outerScaleRadius + 20) * Math.cos(angleRad);
+                    const labelY = centerY - (outerScaleRadius + 20) * Math.sin(angleRad);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", labelX);
+                    label.setAttribute("y", labelY + 5);
+                    label.setAttribute("font-size", "10");
+                    label.setAttribute("text-anchor", "middle");
+                    label.textContent = wavelength;
+                    svg.appendChild(label);
+                }
+            }
+            
+            // Add title
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            title.setAttribute("x", centerX);
+            title.setAttribute("y", 30);
+            title.setAttribute("font-size", "20");
+            title.setAttribute("text-anchor", "middle");
+            title.setAttribute("font-weight", "bold");
+            title.textContent = "Smith Chart";
+            svg.appendChild(title);
+        });
+    </script>
+</body>
+</html>

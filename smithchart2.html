@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Smith Chart</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+        .chart-container {
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <svg id="smithChart" width="800" height="800" viewBox="0 0 800 800"></svg>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const svg = document.getElementById('smithChart');
+            const centerX = 400;
+            const centerY = 400;
+            const radius = 350;
+            
+            // Draw outer circle (|Γ|=1 circle)
+            const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            outerCircle.setAttribute("cx", centerX);
+            outerCircle.setAttribute("cy", centerY);
+            outerCircle.setAttribute("r", radius);
+            outerCircle.setAttribute("fill", "none");
+            outerCircle.setAttribute("stroke", "black");
+            outerCircle.setAttribute("stroke-width", "1.5");
+            svg.appendChild(outerCircle);
+            
+            // Draw horizontal line (real axis)
+            const realAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            realAxis.setAttribute("x1", centerX - radius);
+            realAxis.setAttribute("y1", centerY);
+            realAxis.setAttribute("x2", centerX + radius);
+            realAxis.setAttribute("y2", centerY);
+            realAxis.setAttribute("stroke", "black");
+            realAxis.setAttribute("stroke-width", "1.5");
+            svg.appendChild(realAxis);
+            
+            // Draw constant resistance circles (black)
+            const resistances = [0, 0.2, 0.5, 1, 2, 5];
+            resistances.forEach(r => {
+                if (r === 0) {
+                    // Special case for r=0 (left edge)
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", centerX - radius);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", radius);
+                    circle.setAttribute("fill", "none");
+                    circle.setAttribute("stroke", "black");
+                    circle.setAttribute("stroke-width", "1");
+                    svg.appendChild(circle);
+                    
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", centerX - radius + 10);
+                    label.setAttribute("y", centerY + 15);
+                    label.setAttribute("font-size", "14");
+                    label.textContent = "0";
+                    svg.appendChild(label);
+                } else {
+                    const circleRadius = radius / (1 + r);
+                    const circleX = centerX + (radius * r) / (1 + r);
+                    
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", circleX);
+                    circle.setAttribute("cy", centerY);
+                    circle.setAttribute("r", circleRadius);
+                    circle.setAttribute("fill", "none");
+                    circle.setAttribute("stroke", "black");
+                    circle.setAttribute("stroke-width", "1");
+                    svg.appendChild(circle);
+                    
+                    // Label
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("x", circleX + circleRadius + 8);
+                    label.setAttribute("y", centerY + 5);
+                    label.setAttribute("font-size", "14");
+                    label.textContent = r.toString();
+                    svg.appendChild(label);
+                }
+            });
+            
+            // Draw constant reactance arcs (black)
+            const reactances = [0.2, 0.5, 1, 2, 5];
+            reactances.forEach(x => {
+                // Positive reactance (upper half)
+                const arcRadiusPos = radius / x;
+                const arcCenterXPos = centerX + radius;
+                const arcCenterYPos = centerY - arcRadiusPos;
+                
+                const arcPos = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                arcPos.setAttribute("d", `M ${centerX} ${centerY} A ${arcRadiusPos} ${arcRadiusPos} 0 0 1 ${centerX + 2*radius} ${centerY}`);
+                arcPos.setAttribute("fill", "none");
+                arcPos.setAttribute("stroke", "black");
+                arcPos.setAttribute("stroke-width", "1");
+                svg.appendChild(arcPos);
+                
+                // Negative reactance (lower half)
+                const arcNeg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                arcNeg.setAttribute("d", `M ${centerX} ${centerY} A ${arcRadiusPos} ${arcRadiusPos} 0 0 0 ${centerX + 2*radius} ${centerY}`);
+                arcNeg.setAttribute("fill", "none");
+                arcNeg.setAttribute("stroke", "black");
+                arcNeg.setAttribute("stroke-width", "1");
+                svg.appendChild(arcNeg);
+                
+                // Add label for positive reactance
+                const labelPos = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                labelPos.setAttribute("x", centerX + radius + 5);
+                labelPos.setAttribute("y", centerY - arcRadiusPos + 5);
+                labelPos.setAttribute("font-size", "14");
+                labelPos.textContent = x.toString();
+                svg.appendChild(labelPos);
+                
+                // Add label for negative reactance
+                const labelNeg = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                labelNeg.setAttribute("x", centerX + radius + 5);
+                labelNeg.setAttribute("y", centerY + arcRadiusPos + 5);
+                labelNeg.setAttribute("font-size", "14");
+                labelNeg.textContent = "-" + x.toString();
+                svg.appendChild(labelNeg);
+            });
+            
+            // Add center marker
+            const centerMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            centerMarker.setAttribute("cx", centerX);
+            centerMarker.setAttribute("cy", centerY);
+            centerMarker.setAttribute("r", 3);
+            centerMarker.setAttribute("fill", "black");
+            svg.appendChild(centerMarker);
+            
+            // Add open circuit marker (right edge)
+            const openMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            openMarker.setAttribute("cx", centerX + radius);
+            openMarker.setAttribute("cy", centerY);
+            openMarker.setAttribute("r", 3);
+            openMarker.setAttribute("fill", "black");
+            svg.appendChild(openMarker);
+            
+            const openLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            openLabel.setAttribute("x", centerX + radius + 15);
+            openLabel.setAttribute("y", centerY + 5);
+            openLabel.setAttribute("font-size", "14");
+            openLabel.textContent = "∞";
+            svg.appendChild(openLabel);
+            
+            // Add short circuit marker (left edge)
+            const shortMarker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            shortMarker.setAttribute("cx", centerX - radius);
+            shortMarker.setAttribute("cy", centerY);
+            shortMarker.setAttribute("r", 3);
+            shortMarker.setAttribute("fill", "black");
+            svg.appendChild(shortMarker);
+            
+            // Add wavelength scales
+            const wavelengthScale = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            wavelengthScale.setAttribute("d", `M ${centerX + radius + 30} ${centerY - radius} L ${centerX + radius + 30} ${centerY + radius}`);
+            wavelengthScale.setAttribute("stroke", "black");
+            wavelengthScale.setAttribute("stroke-width", "1");
+            svg.appendChild(wavelengthScale);
+            
+            // Add wavelength ticks and labels
+            for (let y = centerY - radius; y <= centerY + radius; y += radius / 10) {
+                const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                tick.setAttribute("x1", centerX + radius + 30);
+                tick.setAttribute("y1", y);
+                tick.setAttribute("x2", centerX + radius + 35);
+                tick.setAttribute("y2", y);
+                tick.setAttribute("stroke", "black");
+                tick.setAttribute("stroke-width", "1");
+                svg.appendChild(tick);
+                
+                // Label every 0.1 wavelength
+                const wavelength = ((centerY - y) / (2 * radius)).toFixed(1);
+                const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                label.setAttribute("x", centerX + radius + 40);
+                label.setAttribute("y", y + 5);
+                label.setAttribute("font-size", "12");
+                label.textContent = wavelength;
+                svg.appendChild(label);
+            }
+            
+            // Add title
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            title.setAttribute("x", centerX);
+            title.setAttribute("y", 30);
+            title.setAttribute("font-size", "20");
+            title.setAttribute("text-anchor", "middle");
+            title.setAttribute("font-weight", "bold");
+            title.textContent = "Smith Chart";
+            svg.appendChild(title);
+        });
+    </script>
+</body>
+</html>
