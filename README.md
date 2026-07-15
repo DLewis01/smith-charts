@@ -9,11 +9,7 @@ At radio frequencies, circuits behave differently from the simple resistor circu
 The Smith Chart brings all of these effects together into a single picture. It allows you to:
 
 - Visualise complex impedance.
-
 - Match antennas to transmitters.
-
 - Design RF filters and matching networks.
-
 - Understand standing waves and reflections.
-
--Calculate transmission line behaviour without complicated mathematics.
+- Calculate transmission line behaviour without complicated mathematics.
